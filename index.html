@@ -49,22 +49,41 @@ const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-per
 scene.add(new THREE.HemisphereLight(0xd8efff,0x52634b,2.1));
 const sun=new THREE.DirectionalLight(0xfff0d6,2.7);sun.position.set(-90,150,70);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-180;sun.shadow.camera.right=180;sun.shadow.camera.top=180;sun.shadow.camera.bottom=-180;scene.add(sun);
 const mat=(color,roughness=.8,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(1100,1100),mat(0x64845c));ground.rotation.x=-Math.PI/2;ground.position.y=-.12;ground.receiveShadow=true;scene.add(ground);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(1100,1100),mat(0x777d79,1));ground.rotation.x=-Math.PI/2;ground.position.y=-.16;ground.receiveShadow=true;scene.add(ground);
 function box(w,h,d,m,x,y,z,parent=scene){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o}
-const asphaltCanvas=document.createElement('canvas');asphaltCanvas.width=asphaltCanvas.height=512;const ac=asphaltCanvas.getContext('2d');ac.fillStyle='#30343a';ac.fillRect(0,0,512,512);for(let i=0;i<18000;i++){const v=70+Math.random()*65;ac.fillStyle='rgba('+v+','+v+','+v+',0.22)';ac.fillRect(Math.random()*512,Math.random()*512,1+Math.random()*2,1+Math.random()*2)}const asphaltTex=new THREE.CanvasTexture(asphaltCanvas);asphaltTex.wrapS=asphaltTex.wrapT=THREE.RepeatWrapping;asphaltTex.repeat.set(8,2);asphaltTex.colorSpace=THREE.SRGBColorSpace;
-const roadMat=new THREE.MeshStandardMaterial({color:0x8b9299,map:asphaltTex,roughness:.92}),lineMat=mat(0xf5f0df),sideMat=mat(0xb7b8ad);
-function road(x,z,w,d){box(w,.12,d,roadMat,x,0,z);if(w>d){for(let p=-w/2+8;p<w/2-4;p+=13)box(5,.025,.22,lineMat,x+p,.071,z)}else{for(let p=-d/2+8;p<d/2-4;p+=13)box(.22,.025,5,lineMat,x,.071,z+p)}}
-road(0,0,620,18);road(0,0,18,620);road(0,-150,360,14);road(0,150,360,14);road(-150,0,14,360);road(150,0,14,360);
-for(const [x,z,w,d] of [[0,-300,620,12],[0,300,620,12],[-300,0,12,620],[300,0,12,620]])box(w,.1,d,sideMat,x,-.01,z);
-const buildingM=[0x8fa2b2,0xc2b9a5,0x657e91,0xd1d5d0,0x9caa9a].map(c=>mat(c));
-// Street furniture and illuminated city details
-const poleMat=mat(0x303b45,.35,.65),glowMat=new THREE.MeshStandardMaterial({color:0xffe7b2,emissive:0xffc76b,emissiveIntensity:2.5});
-for(let side of [-1,1])for(let z=-270;z<=270;z+=45){const x=side*16;box(.22,7,.22,poleMat,x,3.5,z);box(2.8,.16,.18,poleMat,x+side*1.25,6.8,z);box(.8,.12,.35,glowMat,x+side*2.25,6.65,z)}
-for(let i=0;i<105;i++){let x=(Math.random()-.5)*520,z=(Math.random()-.5)*520;if(Math.abs(x)<35||Math.abs(z)<35)continue;let w=10+Math.random()*17,d=10+Math.random()*17,h=12+Math.random()*55;const facade=new THREE.MeshPhysicalMaterial({color:buildingM[i%buildingM.length].color,roughness:.48,metalness:.18});const b=box(w,h,d,facade,x,h/2,z);if(Math.random()>.45){for(let y=5;y<h-3;y+=5)for(let xx=-w/2+2;xx<w/2-1;xx+=4){const win=new THREE.MeshStandardMaterial({color:0x9ed8e8,emissive:0x31596c,emissiveIntensity:.35,roughness:.25,metalness:.25});box(.9,1.4,.08,win,x+xx,y,z+d/2+.05,b)}}}
-const treeM=mat(0x315d3c),trunkM=mat(0x604632);
-for(let i=0;i<180;i++){let x=(Math.random()-.5)*850,z=(Math.random()-.5)*850;if(Math.abs(x)<330&&Math.abs(z)<330)continue;let h=3+Math.random()*5;box(.7,h*.55,.7,trunkM,x,h*.275,z);const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(h*.48,1),treeM);crown.position.set(x,h*.85,z);crown.castShadow=true;scene.add(crown)}
-// distant hills
-for(let i=0;i<36;i++){let a=i/36*Math.PI*2,r=430+Math.random()*80,h=35+Math.random()*55;const hill=new THREE.Mesh(new THREE.ConeGeometry(55+Math.random()*40,h,7),mat(0x58765d));hill.position.set(Math.cos(a)*r,h/2-4,Math.sin(a)*r);scene.add(hill)}
+const asphaltCanvas=document.createElement('canvas');asphaltCanvas.width=asphaltCanvas.height=512;const ac=asphaltCanvas.getContext('2d');ac.fillStyle='#34383b';ac.fillRect(0,0,512,512);for(let i=0;i<26000;i++){const v=65+Math.random()*75;ac.fillStyle='rgba('+v+','+v+','+v+','+(Math.random()*.23)+')';ac.fillRect(Math.random()*512,Math.random()*512,1+Math.random()*2,1+Math.random()*2)}
+const asphaltTex=new THREE.CanvasTexture(asphaltCanvas);asphaltTex.wrapS=asphaltTex.wrapT=THREE.RepeatWrapping;asphaltTex.repeat.set(12,3);asphaltTex.colorSpace=THREE.SRGBColorSpace;
+const roadMat=new THREE.MeshStandardMaterial({color:0xb1b4b6,map:asphaltTex,roughness:.94}),lineMat=mat(0xe9e5d9),curbMat=mat(0xb6b8b5),sidewalkMat=mat(0xaaa99f),darkTrim=mat(0x343a3e,.52,.35);
+function road(x,z,w,d){box(w,.14,d,roadMat,x,-.015,z);if(w>d){for(let p=-w/2+8;p<w/2-4;p+=13)box(5,.018,.18,lineMat,x+p,.066,z);for(const s of [-1,1])box(w,.12,.22,curbMat,x,.015,z+s*(d/2+.18))}else{for(let p=-d/2+8;p<d/2-4;p+=13)box(.18,.018,5,lineMat,x,.066,z+p);for(const s of [-1,1])box(.22,.12,d,curbMat,x+s*(w/2+.18),.015,z)}}
+road(0,0,620,19);road(0,0,19,620);road(0,-150,360,15);road(0,150,360,15);road(-150,0,15,360);road(150,0,15,360);
+for(const z of [-12.3,12.3])box(620,.22,4.8,sidewalkMat,0,-.01,z);for(const x of [-12.3,12.3])box(4.8,.22,620,sidewalkMat,x,-.01,0);
+for(const axis of ['x','z'])for(const s of [-1,1])for(let k=-5;k<=5;k++){if(axis==='x')box(1.45,.025,.42,lineMat,k*1.8,.075,s*13.1);else box(.42,.025,1.45,lineMat,s*13.1,k*1.8,.075)}
+// Architectural materials: curtain-wall glass, pale stone, anodised metal and recessed dark glazing.
+const facadeColors=[0x9eafb7,0x7f929d,0xb9b8ae,0x8d9b9d,0xc3c0b5,0x667b88];
+const glassMats=[0x477080,0x6d8790,0x91a9ad,0x354e5c].map(c=>new THREE.MeshPhysicalMaterial({color:c,roughness:.2,metalness:.52,clearcoat:.8,clearcoatRoughness:.14}));
+const concreteMats=facadeColors.map(c=>mat(c,.78,.12)),windowMats=[0x263f4b,0x385967,0x78939a,0xa7b9b6].map(c=>new THREE.MeshPhysicalMaterial({color:c,roughness:.16,metalness:.45,clearcoat:1}));
+const warmWindow=new THREE.MeshStandardMaterial({color:0xffdca0,emissive:0xffb95e,emissiveIntensity:.28});
+const metalTrim=mat(0x59666d,.34,.78);
+function makeTower(x,z,w,d,h,seed){
+ const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);const baseH=Math.min(8,h*.22),stone=concreteMats[seed%concreteMats.length],glass=glassMats[seed%glassMats.length];
+ box(w,baseH,d,stone,0,baseH/2,0,g);box(w*.84,baseH*.55,.045,glass,0,baseH*.48,d/2+.03,g);box(w+1,.45,d+1,darkTrim,0,.24,0,g);
+ box(w*.86,h-baseH,d*.86,glass,0,baseH+(h-baseH)/2,0,g);
+ const cols=Math.max(2,Math.floor(w/3.2)),floors=Math.floor((h-baseH)/3.2);
+ for(let side of [-1,1])for(let i=0;i<=cols;i++){const xx=-w*.43+i*w*.86/cols;box(.10,h-baseH,.16,metalTrim,xx,baseH+(h-baseH)/2,side*d*.435,g)}
+ for(let row=0;row<floors;row++){const yy=baseH+2+row*3.2;box(w*.86,.075,d*.88,metalTrim,0,yy,0,g);for(let col=0;col<cols;col++){const xx=-w*.36+col*w*.72/Math.max(1,cols-1);const win=new THREE.Mesh(new THREE.PlaneGeometry(1.75,1.65),Math.random()>.84?warmWindow:windowMats[(seed+row+col)%windowMats.length]);win.position.set(xx,yy+1.05,d*.86/2+.025);g.add(win)}}
+ box(w*.9,.55,d*.9,stone,0,h-.25,0,g);box(w*.34,2.2,d*.34,darkTrim,w*.12,h+1,0,g);
+ for(let side of [-1,1])box(w*.32,baseH*.48,.08,glass,side*w*.27,baseH*.46,d*.435+.08,g);
+}
+let towerSeed=0;
+for(let gx=-2;gx<=2;gx++)for(let gz=-2;gz<=2;gz++){if(gx===0||gz===0)continue;for(let n=0;n<2+(Math.abs(gx+gz)%2);n++){const x=gx*92+(n%2)*25-12,z=gz*92+Math.floor(n/2)*28-10,w=19+(towerSeed%4)*3,d=18+((towerSeed+2)%3)*4,h=28+((towerSeed*17)%7)*9;makeTower(x,z,w,d,h,towerSeed++)}}
+makeTower(-205,-205,42,38,112,towerSeed++);makeTower(205,-205,38,42,96,towerSeed++);makeTower(-205,205,40,36,124,towerSeed++);makeTower(205,205,44,40,105,towerSeed++);
+// Streetlights, signals, landscaped trees and skyline details.
+const poleMat=mat(0x303a40,.3,.78),glowMat=new THREE.MeshStandardMaterial({color:0xffe7bd,emissive:0xffc878,emissiveIntensity:1.4});
+for(let side of [-1,1])for(let z=-270;z<=270;z+=45){const x=side*17;box(.16,7.5,.16,poleMat,x,3.75,z);box(2.5,.13,.13,poleMat,x+side*1.1,7.25,z);box(.75,.1,.34,glowMat,x+side*2.1,7.12,z)}
+for(const [x,z] of [[-16,-16],[16,-16],[-16,16],[16,16]]){box(.16,5.2,.16,poleMat,x,2.6,z);box(.72,1.65,.38,darkTrim,x,4.8,z);for(let j=0;j<3;j++){const m=new THREE.MeshStandardMaterial({color:[0xe94d42,0xe9bd52,0x53b978][j],emissive:[0x5d100b,0x5b4208,0x0b4b24][j],emissiveIntensity:.55});const lamp=new THREE.Mesh(new THREE.SphereGeometry(.16,12,10),m);lamp.position.set(x,5.25-j*.45,z+.22);scene.add(lamp)}}
+const trunkM=mat(0x554436),leafMats=[0x42684e,0x527657,0x657f58].map(c=>mat(c,1));
+for(let i=0;i<110;i++){let x=(Math.random()-.5)*760,z=(Math.random()-.5)*760;if(Math.abs(x)<30||Math.abs(z)<30)continue;const h=3.5+Math.random()*3.5;box(.38,h*.55,.38,trunkM,x,h*.275,z);const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(h*.55,2),leafMats[i%3]);crown.position.set(x,h*.82,z);crown.castShadow=true;scene.add(crown)}
+for(let i=0;i<44;i++){const a=i/44*Math.PI*2,r=475+Math.random()*65,h=28+Math.random()*42;const hill=new THREE.Mesh(new THREE.ConeGeometry(65+Math.random()*35,h,9),mat(0x607b69));hill.position.set(Math.cos(a)*r,h/2-5,Math.sin(a)*r);hill.rotation.y=a*.3;scene.add(hill)}
 const carDefs=[{name:'CITY SPORT',color:0x16b9e9,power:32,max:62,shape:'sport'},{name:'RALLY X',color:0xe8a12b,power:27,max:55,shape:'rally'},{name:'FUTURE GT',color:0x9b7cff,power:38,max:72,shape:'future'}];
 let carIndex=0,car=new THREE.Group(),speed=0,heading=0,third=true;
 function buildCar(def){
