@@ -297,7 +297,8 @@ function placeRival(r){const p=racePoint(r.angle),n=raceNormal(r.angle);p.addSca
 function updateRivals(dt){for(const r of rivalCars){if(raceActive){r.angle+=r.speed/104*dt;if(r.angle>Math.PI*2)r.angle-=Math.PI*2;placeRival(r)}}}
 const clock=new THREE.Clock(),camTarget=new THREE.Vector3(),lookTarget=new THREE.Vector3();
 function update(dt){
- if(raceCountdown>0){raceCountdown-=dt;const cd=document.querySelector('#countdown');if(raceCountdown>2.6)cd.innerHTML='3<small>GET READY</small>';else if(raceCountdown>1.7)cd.innerHTML='2<small>GET READY</small>';else if(raceCountdown>.8)cd.innerHTML='1<small>GET READY</small>';else if(raceCountdown>0)cd.innerHTML='GO!<small>RACE START</small>';else{raceActive=true;raceGoTimer=.65;cd.innerHTML='GO!<small>RACE START</small>'}if(raceGoTimer>0){raceGoTimer-=dt;if(raceGoTimer<=0)cd.style.display='none'}speed=0;velocity.set(0,0,0);return}
+ if(raceCountdown>0){raceCountdown-=dt;const cd=document.querySelector('#countdown');if(raceCountdown>2.6)cd.innerHTML='3<small>GET READY</small>';else if(raceCountdown>1.7)cd.innerHTML='2<small>GET READY</small>';else if(raceCountdown>.8)cd.innerHTML='1<small>GET READY</small>';else if(raceCountdown>0)cd.innerHTML='GO!<small>RACE START</small>';else{raceActive=true;raceGoTimer=.65;cd.innerHTML='GO!<small>RACE START</small>'}speed=0;velocity.set(0,0,0);return}
+ if(raceGoTimer>0){raceGoTimer-=dt;if(raceGoTimer<=0)document.querySelector('#countdown').style.display='none'}
  const def=carDefs[carIndex],forward=keys.w||keys.arrowup,back=keys.s||keys.arrowdown,left=keys.a||keys.arrowleft,right=keys.d||keys.arrowright,brake=keys[' '],driftKey=keys.shift;
  const steer=(left?1:0)-(right?1:0);
  let fwd=new THREE.Vector3(Math.sin(heading),0,Math.cos(heading));
