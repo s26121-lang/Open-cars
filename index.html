@@ -266,7 +266,11 @@ function buildCar(def){
   const rearBlade=new THREE.Mesh(new THREE.BoxGeometry(2.25,.08,.18),chrome);rearBlade.position.set(0,1.42,-2.18);g.add(rearBlade);
  }
  g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
- return g;
+ // Separate the physical chassis from cosmetic body lean. The root handles yaw only.
+ const chassis=new THREE.Group();
+ chassis.add(g);
+ chassis.userData.visual=g;
+ return chassis;
 }
 function setCar(i){carIndex=(i+3)%3;if(car.parent)scene.remove(car);car=buildCar(carDefs[carIndex]);scene.add(car);document.querySelector('#carName').textContent=carDefs[carIndex].name;toast('車を変更：'+carDefs[carIndex].name)}
 setCar(0);car.position.set(0,0,0);
@@ -304,21 +308,20 @@ function update(dt){
  car.position.x+=velocity.x*dt;car.position.z+=velocity.z*dt;
  constrainRaceTrack();
  speed=velocity.dot(fwd);
- // Gravity acts only while airborne. Ground contact cancels downward velocity,
- // preventing gravity from accumulating a fresh impact every frame.
- if(car.position.y>0.001||verticalVelocity>0){
-  verticalVelocity-=22*dt;
-  car.position.y+=verticalVelocity*dt;
-  if(car.position.y<=0){car.position.y=0;verticalVelocity=0}
- }else{
-  car.position.y=0;
-  verticalVelocity=0;
- }
+ // This prototype has no jump ramps yet: keep the chassis grounded.
+ // Do not feed gravity into the chassis rotation or let tiny numeric offsets accumulate.
+ car.position.y=0;
+ verticalVelocity=0;
  const targetDrift=THREE.MathUtils.clamp(Math.abs(lateral)/Math.max(5,Math.abs(longitudinal))*.95,0,1);
  driftAmount=THREE.MathUtils.lerp(driftAmount,targetDrift,1-Math.exp(-5*dt));
  bodyRoll=THREE.MathUtils.lerp(bodyRoll,-steer*.055-driftAmount*steer*.12,1-Math.exp(-5*dt));
  bodyPitch=THREE.MathUtils.lerp(bodyPitch,forward?-.025:back?.035:0,1-Math.exp(-3*dt));
- car.rotation.set(bodyPitch,heading,bodyRoll);
+ // The physical root rotates only around world-up; lean is visual and isolated.
+ car.rotation.set(0,heading,0);
+ if(car.userData.visual)car.userData.visual.rotation.set(
+  THREE.MathUtils.clamp(bodyPitch,-.045,.045),0,
+  THREE.MathUtils.clamp(bodyRoll,-.09,.09)
+ );
  const camBack=10+driftAmount*1.7;
  if(third){camTarget.copy(car.position).addScaledVector(fwd,-camBack);camTarget.y+=5.2+driftAmount*.65;lookTarget.copy(car.position);lookTarget.y+=1.2}
  else{camTarget.copy(car.position);camTarget.y+=1.65;camTarget.addScaledVector(fwd,1.4);lookTarget.copy(camTarget).addScaledVector(fwd,18)}
