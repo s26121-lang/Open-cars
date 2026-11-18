@@ -84,6 +84,38 @@ for(const [x,z] of [[-16,-16],[16,-16],[-16,16],[16,16]]){box(.16,5.2,.16,poleMa
 const trunkM=mat(0x554436),leafMats=[0x42684e,0x527657,0x657f58].map(c=>mat(c,1));
 for(let i=0;i<110;i++){let x=(Math.random()-.5)*760,z=(Math.random()-.5)*760;if(Math.abs(x)<30||Math.abs(z)<30)continue;const h=3.5+Math.random()*3.5;box(.38,h*.55,.38,trunkM,x,h*.275,z);const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(h*.55,2),leafMats[i%3]);crown.position.set(x,h*.82,z);crown.castShadow=true;scene.add(crown)}
 for(let i=0;i<44;i++){const a=i/44*Math.PI*2,r=475+Math.random()*65,h=28+Math.random()*42;const hill=new THREE.Mesh(new THREE.ConeGeometry(65+Math.random()*35,h,9),mat(0x607b69));hill.position.set(Math.cos(a)*r,h/2-5,Math.sin(a)*r);hill.rotation.y=a*.3;scene.add(hill)}
+// Moving city traffic: simple detailed vehicles following the four main avenues.
+const trafficRoot=new THREE.Group();scene.add(trafficRoot);
+const trafficPaint=[0xe7e9e8,0x172532,0x9c3030,0x3c6577,0xb4a27d,0x25292d].map(c=>new THREE.MeshPhysicalMaterial({color:c,roughness:.24,metalness:.62,clearcoat:.8}));
+const trafficGlass=new THREE.MeshPhysicalMaterial({color:0x142a36,roughness:.15,metalness:.35,clearcoat:1});
+const trafficRubber=mat(0x15191c,.88),trafficRim=mat(0x87939a,.25,.9),trafficLamp=new THREE.MeshStandardMaterial({color:0xfff1d0,emissive:0xffd28a,emissiveIntensity:1.1}),trafficTail=new THREE.MeshStandardMaterial({color:0xff4035,emissive:0xb51b13,emissiveIntensity:.8});
+const trafficCars=[];
+function makeTrafficCar(index,axis,dir,lane,offset){
+ const g=new THREE.Group(),paint=trafficPaint[index%trafficPaint.length];
+ const body=new THREE.Mesh(new THREE.BoxGeometry(1.85,.62,4.15),paint);body.position.y=.72;body.castShadow=true;g.add(body);
+ const cabin=new THREE.Mesh(new THREE.BoxGeometry(1.48,.72,2.05),trafficGlass);cabin.position.set(0,1.36,-.12);g.add(cabin);
+ const roof=new THREE.Mesh(new THREE.BoxGeometry(1.35,.08,1.48),paint);roof.position.set(0,1.73,-.12);g.add(roof);
+ for(const x of [-.94,.94])for(const z of [-1.35,1.35]){
+  const tire=new THREE.Mesh(new THREE.CylinderGeometry(.36,.36,.2,18),trafficRubber);tire.rotation.z=Math.PI/2;tire.position.set(x,.48,z);g.add(tire);
+  const rim=new THREE.Mesh(new THREE.CylinderGeometry(.19,.19,.21,16),trafficRim);rim.rotation.z=Math.PI/2;rim.position.set(x*1.01,.48,z);g.add(rim);
+ }
+ for(const x of [-.58,.58]){
+  const lamp=new THREE.Mesh(new THREE.BoxGeometry(.38,.12,.06),trafficLamp);lamp.position.set(x,.82,2.09);g.add(lamp);
+  const tail=new THREE.Mesh(new THREE.BoxGeometry(.38,.13,.06),trafficTail);tail.position.set(x,.82,-2.09);g.add(tail);
+ }
+ const speed=7+(index%5)*1.15;
+ const item={group:g,axis,dir,lane,progress:offset,speed};
+ trafficRoot.add(g);trafficCars.push(item);placeTraffic(item);
+}
+function placeTraffic(v){
+ const p=v.progress-290;
+ if(v.axis==='x'){v.group.position.set(p,v.group.position.y,v.lane);v.group.rotation.y=v.dir>0?Math.PI/2:-Math.PI/2}
+ else{v.group.position.set(v.lane,v.group.position.y,p);v.group.rotation.y=v.dir>0?0:Math.PI}
+}
+for(let i=0;i<16;i++){
+ const axis=i%2?'z':'x',dir=(i%4<2)?1:-1,lane=dir>0?-4.8:4.8;
+ makeTrafficCar(i,axis,dir,lane,(i*73+31)%580);
+}
 const carDefs=[{name:'CITY SPORT',color:0x16b9e9,power:32,max:62,shape:'sport'},{name:'RALLY X',color:0xe8a12b,power:27,max:55,shape:'rally'},{name:'FUTURE GT',color:0x9b7cff,power:38,max:72,shape:'future'}];
 let carIndex=0,car=new THREE.Group(),speed=0,heading=0,third=true;
 function buildCar(def){
@@ -127,7 +159,7 @@ function buildCar(def){
  }
  // Detailed wheels, metallic multi-spoke rims and brake discs.
  for(const x of [-1.06,1.06])for(const z of [-1.43,1.42]){
-  const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.46,.46,.30,32),carbon);wheel.rotation.z=Math.PI/2;wheel.position.set(x,.49,z);wheel.castShadow=true;g.add(wheel);
+  const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.46,.46,.30,32),carbon);wheel.userData.rollingWheel=true;wheel.rotation.z=Math.PI/2;wheel.position.set(x,.49,z);wheel.castShadow=true;g.add(wheel);
   const rim=new THREE.Mesh(new THREE.CylinderGeometry(.31,.31,.315,32),chrome);rim.rotation.z=Math.PI/2;rim.position.set(x*1.005,.49,z);g.add(rim);
   const disc=new THREE.Mesh(new THREE.CylinderGeometry(.235,.235,.32,24),mat(0x424d58,.32,.8));disc.rotation.z=Math.PI/2;disc.position.set(x*1.01,.49,z);g.add(disc);
   for(let k=0;k<5;k++){const spoke=new THREE.Mesh(new THREE.BoxGeometry(.035,.045,.52),chrome);spoke.position.set(x*1.02,.49,z);spoke.rotation.x=k*Math.PI/5;spoke.rotation.y=.0;g.add(spoke)}
@@ -173,7 +205,7 @@ if(third){camTarget.copy(car.position).addScaledVector(fwd,-10);camTarget.y+=5.2
 camera.fov=THREE.MathUtils.lerp(camera.fov,65+Math.min(Math.abs(speed)*.18,9),1-Math.pow(.02,dt));camera.updateProjectionMatrix();camera.position.lerp(camTarget,1-Math.pow(.001,dt));camera.lookAt(lookTarget);
 document.querySelector('#speed').innerHTML=String(Math.round(Math.abs(speed)*3.6)).padStart(3,'0')+' <small>KM/H</small>';
 }
-function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.04);update(dt);renderer.render(scene,camera)}animate();
+function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.04);update(dt);car.traverse(o=>{if(o.userData.rollingWheel)o.rotation.x-=speed*dt/.46});for(const v of trafficCars){v.progress+=v.speed*dt*v.dir;if(v.progress>580)v.progress-=580;if(v.progress<0)v.progress+=580;placeTraffic(v)}renderer.render(scene,camera)}animate();
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 </script>
 </body></html>
