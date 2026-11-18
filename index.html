@@ -31,12 +31,13 @@ button{cursor:pointer;border:0;border-radius:10px;padding:12px 18px;font-weight:
 <body>
 <div id="menu"><div class="card">
 <h1>FREE DRIVE</h1><p class="sub">DRIVE YOUR OWN WORLD</p>
-<p class="desc">広い街と自然の中を、好きな方向へ自由に走ろう。まずはオープンワールド試作版！<br>車種変更・視点切替・自由走行ができるよ。</p>
-<div class="row"><button id="start">ドライブ開始</button><button class="secondary" id="how">操作方法</button></div>
+<p class="desc">広い街と自然の中を、好きな方向へ自由に走ろう。まずはオープンワールド試作版！<br>車種変更・視点切替・自由走行ができるよ。専用サーキットでは3周レースにも挑戦できる！</p>
+<div class="row"><button id="start">自由にドライブ</button><button id="raceStart" class="secondary">サーキットレース</button><button class="secondary" id="how">操作方法</button></div>
 <p id="howText" class="desc" hidden>WASD / 矢印：運転　C：視点切替　1〜3：車変更　R：リセット　Space：ブレーキ</p>
 </div></div>
 <div id="hud">
  <div class="top"><div class="brand">FREE DRIVE<small>OPEN WORLD • PROTOTYPE 01</small></div><div class="panel"><div id="speed">000 <small>KM/H</small></div><div id="carName">CITY SPORT</div></div></div>
+ <div id="raceHud" class="panel" style="position:absolute;top:82px;left:50%;transform:translateX(-50%);display:none;text-align:center;min-width:190px;font-weight:800;letter-spacing:.08em"><div id="raceLap">LAP 1 / 3</div><div id="raceTime" style="font-size:22px;font-variant-numeric:tabular-nums">00:00.0</div></div>
  <div id="toast"></div>
  <div class="bottom"><div class="panel" id="help">WASD / ↑↓←→　運転<br>C　視点切替　　1〜3　車変更<br>R　スタート地点へ戻る　　Space　ブレーキ</div><div class="panel">自由走行エリア <b>01</b></div></div>
  <div id="touch"><div class="pad"><button class="touchbtn" data-key="a">◀</button><button class="touchbtn" data-key="d">▶</button></div><div class="pad"><button class="touchbtn" data-key="w">▲</button><button class="touchbtn" data-key="s">▼</button></div></div>
@@ -116,6 +117,68 @@ for(let i=0;i<16;i++){
  const axis=i%2?'z':'x',dir=(i%4<2)?1:-1,lane=dir>0?-4.8:4.8;
  makeTrafficCar(i,axis,dir,lane,(i*73+31)%580);
 }
+// Dedicated race circuit on the edge of the city: a wide, bank-free flowing loop.
+const raceCenter=new THREE.Vector3(350,0,0),raceRX=122,raceRZ=86,raceTrack=new THREE.Group();scene.add(raceTrack);
+const raceRoadMat=new THREE.MeshStandardMaterial({color:0x303438,map:asphaltTex,roughness:.96});
+const raceLineMat=mat(0xf4f0df),raceRed=mat(0xd63832,.55,.18),raceWhite=mat(0xe5e7e5,.6,.12),raceBarrier=mat(0xe8e9e5,.62,.18),raceDark=mat(0x252c32,.5,.4);
+const racePoint=t=>new THREE.Vector3(raceCenter.x+raceRX*Math.cos(t),.03,raceCenter.z+raceRZ*Math.sin(t));
+const raceNormal=t=>new THREE.Vector3(Math.cos(t)/raceRX,0,Math.sin(t)/raceRZ).normalize();
+const raceSegments=112;
+for(let i=0;i<raceSegments;i++){
+ const t=i/raceSegments*Math.PI*2,next=(i+1)/raceSegments*Math.PI*2,p=racePoint((t+next)/2),q=racePoint(next),tangent=q.clone().sub(racePoint(t)).normalize(),yaw=Math.atan2(tangent.x,tangent.z),length=p.distanceTo(q)+1.8;
+ const slab=box(19,.18,length,raceRoadMat,p.x,-.02,p.z,raceTrack);slab.rotation.y=yaw;
+ if(i%4===0){const stripe=box(.22,.025,3.2,raceLineMat,p.x,.09,p.z,raceTrack);stripe.rotation.y=yaw}
+ const normal=raceNormal((t+next)/2);
+ for(const side of [-1,1]){
+  const edge=p.clone().addScaledVector(normal,side*10.1);
+  const rail=box(.58,1.05,length*.88,(i%8<4?raceRed:raceWhite),edge.x,.55,edge.z,raceTrack);rail.rotation.y=yaw;
+  const base=box(.8,.18,length*.9,raceDark,edge.x,.12,edge.z,raceTrack);base.rotation.y=yaw;
+ }
+}
+const startP=racePoint(-Math.PI/2);
+box(19,.035,1.7,raceWhite,startP.x,.105,startP.z,raceTrack);
+for(let i=0;i<12;i++){const tile=box(1.58,.045,.84,i%2?raceDark:raceWhite,startP.x-8.7+i*1.58,.14,startP.z,raceTrack)}
+// Start gantry and four checkpoint arches make the circuit easy to read at speed.
+const gantryMat=mat(0x26333b,.32,.7),signMat=new THREE.MeshStandardMaterial({color:0x0d2534,emissive:0x07131b});
+for(const x of [-9.8,9.8]){box(.5,7,.5,gantryMat,startP.x+x,3.5,startP.z,raceTrack);box(.7,.35,.7,raceRed,startP.x+x,6.8,startP.z,raceTrack)}
+box(21,.7,.65,gantryMat,startP.x,7,startP.z,raceTrack);box(12,1.1,.12,signMat,startP.x,7.05,startP.z+.36,raceTrack);
+for(let i=0;i<5;i++){const lamp=new THREE.Mesh(new THREE.BoxGeometry(1.05,.18,.18),new THREE.MeshStandardMaterial({color:0xfff1d0,emissive:0xffd58a,emissiveIntensity:1.4}));lamp.position.set(startP.x-4.2+i*2.1,7.05,startP.z+.46);raceTrack.add(lamp)}
+const checkpointMarkers=[];
+for(let i=0;i<4;i++){
+ const t=-Math.PI/2+i*Math.PI/2,p=racePoint(t),n=raceNormal(t);
+ for(const side of [-1,1]){const v=p.clone().addScaledVector(n,side*9.5);box(.34,4.6,.34,gantryMat,v.x,2.3,v.z,raceTrack)}
+ const beam=box(19,.32,.32,gantryMat,p.x,4.55,p.z,raceTrack);beam.rotation.y=Math.atan2(-n.z,n.x);
+ const marker=box(.8,3.2,.18,i%2?raceWhite:raceRed,p.x,6.25,p.z,raceTrack);marker.rotation.y=Math.atan2(-n.z,n.x);checkpointMarkers.push(marker);
+}
+// Paddock, pit garages and spectator stands beside the start straight.
+for(let i=0;i<6;i++){
+ const x=raceCenter.x-38+i*13,z=-116;
+ box(11,5,9,mat(i%2?0x78858b:0x9da7a9,.72,.12),x,2.5,z,raceTrack);
+ box(8,2.3,.16,glassMats[i%glassMats.length],x,2.2,z+4.56,raceTrack);
+ box(11,.3,9,gantryMat,x,5.15,z,raceTrack);
+}
+for(let i=0;i<14;i++){const seat=box(3.2,.35,12,mat(i%2?0x52616b:0x6c7b83,.9),raceCenter.x+145,1+i*.62,-60+i*9,raceTrack);seat.rotation.y=.12}
+let raceActive=false,raceFinished=false,raceElapsed=0,raceLaps=0,raceLastProgress=0;
+function raceProgress(){let a=Math.atan2((car.position.z-raceCenter.z)/raceRZ,(car.position.x-raceCenter.x)/raceRX)+Math.PI/2;return (a+Math.PI*2)%(Math.PI*2)}
+function startRace(){
+ raceActive=true;raceFinished=false;raceElapsed=0;raceLaps=0;raceLastProgress=0;speed=0;heading=Math.PI/2;
+ car.position.set(startP.x,0,startP.z-5);car.rotation.y=heading;
+ document.querySelector('#raceHud').style.display='block';document.querySelector('#raceLap').textContent='LAP 1 / 3';document.querySelector('#raceTime').textContent='00:00.0';
+ document.querySelector('#menu').style.display='none';toast('レース開始！ 3周走り切ろう！');
+}
+function updateRace(dt){
+ if(!raceActive)return;
+ raceElapsed+=dt;
+ const progress=raceProgress();
+ if(raceLastProgress>5.35&&progress<.8){
+  raceLaps++;
+  if(raceLaps>=3){raceActive=false;raceFinished=true;document.querySelector('#raceLap').textContent='FINISH!';toast('3周完走！ タイム '+formatRaceTime(raceElapsed))}
+  else{document.querySelector('#raceLap').textContent='LAP '+(raceLaps+1)+' / 3';toast(' '+(raceLaps+1)+'周目！')}
+ }
+ raceLastProgress=progress;
+ document.querySelector('#raceTime').textContent=formatRaceTime(raceElapsed);
+}
+function formatRaceTime(t){const m=Math.floor(t/60),sec=t%60;return String(m).padStart(2,'0')+':'+sec.toFixed(1).padStart(4,'0')}
 const carDefs=[{name:'CITY SPORT',color:0x16b9e9,power:32,max:62,shape:'sport'},{name:'RALLY X',color:0xe8a12b,power:27,max:55,shape:'rally'},{name:'FUTURE GT',color:0x9b7cff,power:38,max:72,shape:'future'}];
 let carIndex=0,car=new THREE.Group(),speed=0,heading=0,third=true;
 function buildCar(def){
@@ -189,11 +252,12 @@ function buildCar(def){
 }
 function setCar(i){carIndex=(i+3)%3;if(car.parent)scene.remove(car);car=buildCar(carDefs[carIndex]);scene.add(car);document.querySelector('#carName').textContent=carDefs[carIndex].name;toast('車を変更：'+carDefs[carIndex].name)}
 setCar(0);car.position.set(0,0,0);
-const keys={};addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();if(e.repeat)return;if(e.key.toLowerCase()==='c'){third=!third;toast(third?'三人称視点':'一人称視点')}if(e.key.toLowerCase()==='r'){car.position.set(0,0,0);heading=0;speed=0}if(['1','2','3'].includes(e.key))setCar(Number(e.key)-1)});
+const keys={};addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();if(e.repeat)return;if(e.key.toLowerCase()==='c'){third=!third;toast(third?'三人称視点':'一人称視点')}if(e.key.toLowerCase()==='r'){speed=0;if(raceActive||raceFinished){startRace()}else{car.position.set(0,0,0);heading=0}}if(['1','2','3'].includes(e.key))setCar(Number(e.key)-1)});
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 document.querySelectorAll('.touchbtn').forEach(b=>{const k=b.dataset.key;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true});['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false))});
 function toast(s){const t=document.querySelector('#toast');t.textContent=s;t.style.opacity=1;clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.style.opacity=0,1500)}
 document.querySelector('#start').onclick=()=>document.querySelector('#menu').style.display='none';
+document.querySelector('#raceStart').onclick=startRace;
 document.querySelector('#how').onclick=()=>{const h=document.querySelector('#howText');h.hidden=!h.hidden};
 const clock=new THREE.Clock(),camTarget=new THREE.Vector3(),lookTarget=new THREE.Vector3();
 function update(dt){const def=carDefs[carIndex],forward=keys.w||keys.arrowup,back=keys.s||keys.arrowdown,left=keys.a||keys.arrowleft,right=keys.d||keys.arrowright,brake=keys[' '];
@@ -203,7 +267,7 @@ car.rotation.y=heading;car.position.x+=Math.sin(heading)*speed*dt;car.position.z
 const fwd=new THREE.Vector3(Math.sin(heading),0,Math.cos(heading));
 if(third){camTarget.copy(car.position).addScaledVector(fwd,-10);camTarget.y+=5.2;lookTarget.copy(car.position);lookTarget.y+=1.2}else{camTarget.copy(car.position);camTarget.y+=1.65;camTarget.addScaledVector(fwd,1.4);lookTarget.copy(camTarget).addScaledVector(fwd,18)}
 camera.fov=THREE.MathUtils.lerp(camera.fov,65+Math.min(Math.abs(speed)*.18,9),1-Math.pow(.02,dt));camera.updateProjectionMatrix();camera.position.lerp(camTarget,1-Math.pow(.001,dt));camera.lookAt(lookTarget);
-document.querySelector('#speed').innerHTML=String(Math.round(Math.abs(speed)*3.6)).padStart(3,'0')+' <small>KM/H</small>';
+document.querySelector('#speed').innerHTML=String(Math.round(Math.abs(speed)*3.6)).padStart(3,'0')+' <small>KM/H</small>';updateRace(dt);
 }
 function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.04);update(dt);car.traverse(o=>{if(o.userData.rollingWheel)o.rotation.x-=speed*dt/.46});for(const v of trafficCars){v.progress+=v.speed*dt*v.dir;if(v.progress>580)v.progress-=580;if(v.progress<0)v.progress+=580;placeTraffic(v)}renderer.render(scene,camera)}animate();
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
