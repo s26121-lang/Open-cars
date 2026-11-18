@@ -37,7 +37,8 @@ button{cursor:pointer;border:0;border-radius:10px;padding:12px 18px;font-weight:
 </div></div>
 <div id="hud">
  <div class="top"><div class="brand">FREE DRIVE<small>OPEN WORLD • PROTOTYPE 01</small></div><div class="panel"><div id="speed">000 <small>KM/H</small></div><div id="carName">CITY SPORT</div></div></div>
- <div id="driftHud" class="panel" style="position:absolute;top:84px;right:18px;display:none;font-size:12px;font-weight:900;letter-spacing:.12em;color:#8feaff">DRIFT <span id="driftValue">0%</span></div>\n <div id="raceHud" class="panel" style="position:absolute;top:82px;left:50%;transform:translateX(-50%);display:none;text-align:center;min-width:190px;font-weight:800;letter-spacing:.08em"><div id="raceLap">LAP 1 / 3</div><div id="raceTime" style="font-size:22px;font-variant-numeric:tabular-nums">00:00.0</div></div>
+ <div id="driftHud" class="panel" style="position:absolute;top:84px;right:18px;display:none;font-size:12px;font-weight:900;letter-spacing:.12em;color:#8feaff">DRIFT <span id="driftValue">0%</span></div>
+ <div id="raceHud" class="panel" style="position:absolute;top:82px;left:50%;transform:translateX(-50%);display:none;text-align:center;min-width:190px;font-weight:800;letter-spacing:.08em"><div id="raceLap">LAP 1 / 3</div><div id="raceTime" style="font-size:22px;font-variant-numeric:tabular-nums">00:00.0</div></div>
  <div id="toast"></div>
  <div class="bottom"><div class="panel" id="help">WASD / ↑↓←→　運転<br>C　視点切替　　1〜3　車変更<br>Shift　ドリフト　　Space　ブレーキ　　R　リセット</div><div class="panel">自由走行エリア <b>01</b></div></div>
  <div id="touch"><div class="pad"><button class="touchbtn" data-key="a">◀</button><button class="touchbtn" data-key="d">▶</button></div><div class="pad"><button class="touchbtn" data-key="w">▲</button><button class="touchbtn" data-key="s">▼</button></div></div>
@@ -180,7 +181,8 @@ function updateRace(dt){
 }
 function formatRaceTime(t){const m=Math.floor(t/60),sec=t%60;return String(m).padStart(2,'0')+':'+sec.toFixed(1).padStart(4,'0')}
 const carDefs=[{name:'CITY SPORT',color:0x16b9e9,power:32,max:62,shape:'sport'},{name:'RALLY X',color:0xe8a12b,power:27,max:55,shape:'rally'},{name:'FUTURE GT',color:0x9b7cff,power:38,max:72,shape:'future'}];
-let carIndex=0,car=new THREE.Group(),speed=0,heading=0,third=true;\nconst velocity=new THREE.Vector3(),worldUp=new THREE.Vector3(0,1,0);let verticalVelocity=0,driftAmount=0,bodyRoll=0,bodyPitch=0;
+let carIndex=0,car=new THREE.Group(),speed=0,heading=0,third=true;
+const velocity=new THREE.Vector3(),worldUp=new THREE.Vector3(0,1,0);let verticalVelocity=0,driftAmount=0,bodyRoll=0,bodyPitch=0;
 function buildCar(def){
  const g=new THREE.Group();
  const body=new THREE.MeshPhysicalMaterial({color:def.color,roughness:.17,metalness:.68,clearcoat:1,clearcoatRoughness:.055});
