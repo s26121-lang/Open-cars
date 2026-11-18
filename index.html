@@ -317,7 +317,7 @@ function update(dt){
  const targetDrift=THREE.MathUtils.clamp(Math.abs(lateral)/Math.max(5,Math.abs(longitudinal))*.95,0,1);
  driftAmount=THREE.MathUtils.lerp(driftAmount,targetDrift,1-Math.exp(-5*dt));
  bodyRoll=THREE.MathUtils.lerp(bodyRoll,-steer*.055-driftAmount*steer*.12,1-Math.exp(-5*dt));
- bodyPitch=THREE.MathUtils.lerp(bodyPitch,forward?-.025:back?.035:0,1-Math.exp(3*dt));
+ bodyPitch=THREE.MathUtils.lerp(bodyPitch,forward?-.025:back?.035:0,1-Math.exp(-3*dt));
  car.rotation.set(bodyPitch,heading,bodyRoll);
  const camBack=10+driftAmount*1.7;
  if(third){camTarget.copy(car.position).addScaledVector(fwd,-camBack);camTarget.y+=5.2+driftAmount*.65;lookTarget.copy(car.position);lookTarget.y+=1.2}
