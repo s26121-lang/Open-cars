@@ -14,6 +14,8 @@
 .bottom{position:absolute;bottom:16px;left:18px;right:18px;display:flex;justify-content:space-between;align-items:end;gap:10px}
 #help{font-size:12px;line-height:1.8;color:#d3e2f0}#carName{font-weight:800;font-size:14px}
 #toast{position:absolute;top:85px;left:50%;transform:translateX(-50%);font-size:13px;color:#eaf6ff;background:#071522cc;padding:9px 15px;border:1px solid #ffffff33;border-radius:20px;opacity:0;transition:opacity .25s}
+#countdown{position:fixed;inset:0;display:none;place-items:center;z-index:4;pointer-events:none;text-align:center;font-weight:1000;font-size:clamp(76px,18vw,160px);font-style:italic;color:#fff;text-shadow:0 8px 35px #000,0 0 24px #53d9ff}
+#countdown small{display:block;font-size:clamp(14px,3vw,24px);letter-spacing:.3em;color:#bdefff}
 #menu{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(135deg,#06101bdc,#07182ad9);color:white;z-index:5}
 .card{width:min(560px,calc(100% - 32px));padding:28px;border:1px solid #ffffff35;border-radius:20px;background:#0b1b2beF;box-shadow:0 24px 90px #0008}
 h1{margin:0;font-size:clamp(36px,8vw,64px);letter-spacing:.12em} .sub{color:#9db7cf;letter-spacing:.24em;font-size:11px;margin:0 0 20px}
@@ -35,6 +37,7 @@ button{cursor:pointer;border:0;border-radius:10px;padding:12px 18px;font-weight:
 <div class="row"><button id="start">自由にドライブ</button><button id="raceStart" class="secondary">サーキットレース</button><button class="secondary" id="how">操作方法</button></div>
 <p id="howText" class="desc" hidden>WASD / 矢印：運転　C：視点切替　1〜3：車変更　Shift：ドリフト　Space：ブレーキ　R：リセット</p>
 </div></div>
+<div id="countdown">3<small>GET READY</small></div>
 <div id="hud">
  <div class="top"><div class="brand">FREE DRIVE<small>OPEN WORLD • PROTOTYPE 01</small></div><div class="panel"><div id="speed">000 <small>KM/H</small></div><div id="carName">CITY SPORT</div></div></div>
  <div id="driftHud" class="panel" style="position:absolute;top:84px;right:18px;display:none;font-size:12px;font-weight:900;letter-spacing:.12em;color:#8feaff">DRIFT <span id="driftValue">0%</span></div>
@@ -162,7 +165,7 @@ for(let i=0;i<6;i++){
  box(11,.3,9,gantryMat,x,5.15,z,raceTrack);
 }
 for(let i=0;i<14;i++){const seat=box(3.2,.35,12,mat(i%2?0x52616b:0x6c7b83,.9),raceCenter.x+145,1+i*.62,-60+i*9,raceTrack);seat.rotation.y=.12;addSolidBox(raceCenter.x+145,-60+i*9,2.2,6.2,.12)}
-let raceActive=false,raceFinished=false,raceElapsed=0,raceLaps=0,raceLastProgress=0;
+let raceActive=false,raceFinished=false,raceElapsed=0,raceLaps=0,raceLastProgress=0,raceCountdown=0,raceGoTimer=0;const rivalCars=[];
 function raceProgress(){let a=Math.atan2((car.position.z-raceCenter.z)/raceRZ,(car.position.x-raceCenter.x)/raceRX)+Math.PI/2;return (a+Math.PI*2)%(Math.PI*2)}
 // Keep the player's car on the paved circuit while a race is active.
 // The invisible boundary sits just inside the visible safety barriers.
@@ -186,10 +189,10 @@ function constrainRaceTrack(){
  }
 }
 function startRace(){
- raceActive=true;raceFinished=false;raceElapsed=0;raceLaps=0;raceLastProgress=0;speed=0;heading=Math.PI/2;
- car.position.set(startP.x,0,startP.z-5);car.rotation.y=heading;velocity.set(0,0,0);verticalVelocity=0;driftAmount=0;
+ raceActive=false;raceFinished=false;raceElapsed=0;raceLaps=0;raceLastProgress=0;raceCountdown=3.6;raceGoTimer=0;speed=0;heading=Math.PI/2;
+ car.position.set(startP.x,0,startP.z-5);car.rotation.y=heading;velocity.set(0,0,0);verticalVelocity=0;driftAmount=0;setupRivals();camera.position.set(car.position.x-11,6,car.position.z);camera.lookAt(car.position.x+8,1,car.position.z);const cd=document.querySelector('#countdown');cd.style.display='grid';cd.innerHTML='3<small>GET READY</small>';
  document.querySelector('#raceHud').style.display='block';document.querySelector('#raceLap').textContent='LAP 1 / 3';document.querySelector('#raceTime').textContent='00:00.0';
- document.querySelector('#menu').style.display='none';toast('レース開始！ 3周走り切ろう！');
+ document.querySelector('#menu').style.display='none';toast('ライバル出走！');
 }
 function updateRace(dt){
  if(!raceActive)return;
@@ -281,7 +284,7 @@ function buildCar(def){
  return chassis;
 }
 function setCar(i){carIndex=(i+3)%3;if(car.parent)scene.remove(car);car=buildCar(carDefs[carIndex]);scene.add(car);document.querySelector('#carName').textContent=carDefs[carIndex].name;toast('車を変更：'+carDefs[carIndex].name)}
-setCar(0);car.position.set(0,0,0);
+setCar(0);car.position.set(0,0,0);for(let i=0;i<5;i++){const group=buildCar(carDefs[i%carDefs.length]);scene.add(group);group.visible=false;rivalCars.push({group,angle:0,lane:0,speed:18})}
 const keys={};addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();if(e.repeat)return;if(e.key.toLowerCase()==='c'){third=!third;toast(third?'三人称視点':'一人称視点')}if(e.key.toLowerCase()==='r'){speed=0;velocity.set(0,0,0);verticalVelocity=0;if(raceActive||raceFinished){startRace()}else{car.position.set(0,0,0);heading=0;car.rotation.set(0,0,0)}}if(['1','2','3'].includes(e.key))setCar(Number(e.key)-1)});
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 document.querySelectorAll('.touchbtn').forEach(b=>{const k=b.dataset.key;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true});['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false))});
@@ -289,8 +292,12 @@ function toast(s){const t=document.querySelector('#toast');t.textContent=s;t.sty
 document.querySelector('#start').onclick=()=>document.querySelector('#menu').style.display='none';
 document.querySelector('#raceStart').onclick=startRace;
 document.querySelector('#how').onclick=()=>{const h=document.querySelector('#howText');h.hidden=!h.hidden};
+function setupRivals(){const lanes=[-4.1,4.1,0,-4.1,4.1];rivalCars.forEach((r,i)=>{r.angle=-Math.PI/2-(i+1)*.145;r.lane=lanes[i];r.speed=17+i*1.35;r.group.visible=true;placeRival(r)})}
+function placeRival(r){const p=racePoint(r.angle),n=raceNormal(r.angle);p.addScaledVector(n,r.lane);const tangent=new THREE.Vector3(-raceRX*Math.sin(r.angle),0,raceRZ*Math.cos(r.angle)).normalize();r.group.position.set(p.x,0,p.z);r.group.rotation.y=Math.atan2(tangent.x,tangent.z)}
+function updateRivals(dt){for(const r of rivalCars){if(raceActive){r.angle+=r.speed/104*dt;if(r.angle>Math.PI*2)r.angle-=Math.PI*2;placeRival(r)}}}
 const clock=new THREE.Clock(),camTarget=new THREE.Vector3(),lookTarget=new THREE.Vector3();
 function update(dt){
+ if(raceCountdown>0){raceCountdown-=dt;const cd=document.querySelector('#countdown');if(raceCountdown>2.6)cd.innerHTML='3<small>GET READY</small>';else if(raceCountdown>1.7)cd.innerHTML='2<small>GET READY</small>';else if(raceCountdown>.8)cd.innerHTML='1<small>GET READY</small>';else if(raceCountdown>0)cd.innerHTML='GO!<small>RACE START</small>';else{raceActive=true;raceGoTimer=.65;cd.innerHTML='GO!<small>RACE START</small>'}if(raceGoTimer>0){raceGoTimer-=dt;if(raceGoTimer<=0)cd.style.display='none'}speed=0;velocity.set(0,0,0);return}
  const def=carDefs[carIndex],forward=keys.w||keys.arrowup,back=keys.s||keys.arrowdown,left=keys.a||keys.arrowleft,right=keys.d||keys.arrowright,brake=keys[' '],driftKey=keys.shift;
  const steer=(left?1:0)-(right?1:0);
  let fwd=new THREE.Vector3(Math.sin(heading),0,Math.cos(heading));
@@ -339,7 +346,7 @@ function update(dt){
  const dh=document.querySelector('#driftHud');dh.style.display=driftAmount>.08||driftRequested?'block':'none';document.querySelector('#driftValue').textContent=Math.round(driftAmount*100)+'%';
  updateRace(dt);
 }
-function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.04);update(dt);car.traverse(o=>{if(o.userData.rollingWheel)o.rotation.x-=speed*dt/.46});for(const v of trafficCars){v.progress+=v.speed*dt*v.dir;if(v.progress>580)v.progress-=580;if(v.progress<0)v.progress+=580;placeTraffic(v)}renderer.render(scene,camera)}animate();
+function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.04);update(dt);car.traverse(o=>{if(o.userData.rollingWheel)o.rotation.x-=speed*dt/.46});for(const v of trafficCars){v.progress+=v.speed*dt*v.dir;if(v.progress>580)v.progress-=580;if(v.progress<0)v.progress+=580;placeTraffic(v)}updateRivals(dt);for(const r of rivalCars)r.group.traverse(o=>{if(o.userData.rollingWheel)o.rotation.x-=r.speed*dt/.46});renderer.render(scene,camera)}animate();
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 </script>
 </body></html>
