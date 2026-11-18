@@ -161,6 +161,22 @@ for(let i=0;i<6;i++){
 for(let i=0;i<14;i++){const seat=box(3.2,.35,12,mat(i%2?0x52616b:0x6c7b83,.9),raceCenter.x+145,1+i*.62,-60+i*9,raceTrack);seat.rotation.y=.12}
 let raceActive=false,raceFinished=false,raceElapsed=0,raceLaps=0,raceLastProgress=0;
 function raceProgress(){let a=Math.atan2((car.position.z-raceCenter.z)/raceRZ,(car.position.x-raceCenter.x)/raceRX)+Math.PI/2;return (a+Math.PI*2)%(Math.PI*2)}
+// Keep the player's car on the paved circuit while a race is active.
+// The invisible boundary sits just inside the visible safety barriers.
+function constrainRaceTrack(){
+ if(!raceActive)return;
+ const dx=car.position.x-raceCenter.x,dz=car.position.z-raceCenter.z;
+ const angle=Math.atan2(dz/raceRZ,dx/raceRX);
+ const center=racePoint(angle),normal=raceNormal(angle);
+ const offset=new THREE.Vector3(car.position.x-center.x,0,car.position.z-center.z).dot(normal);
+ const limit=7.85;
+ if(Math.abs(offset)>limit){
+  const side=Math.sign(offset)||1;
+  car.position.addScaledVector(normal,-side*(Math.abs(offset)-limit));
+  const outwardSpeed=velocity.dot(normal)*side;
+  if(outwardSpeed>0)velocity.addScaledVector(normal,-side*outwardSpeed*1.12);
+ }
+}
 function startRace(){
  raceActive=true;raceFinished=false;raceElapsed=0;raceLaps=0;raceLastProgress=0;speed=0;heading=Math.PI/2;
  car.position.set(startP.x,0,startP.z-5);car.rotation.y=heading;velocity.set(0,0,0);verticalVelocity=0;driftAmount=0;
@@ -286,14 +302,21 @@ function update(dt){
  const maxSpeed=def.max*(driftRequested?1.04:1);
  if(velocity.length()>maxSpeed)velocity.setLength(maxSpeed);
  car.position.x+=velocity.x*dt;car.position.z+=velocity.z*dt;
+ constrainRaceTrack();
  speed=velocity.dot(fwd);
- // Gravity and a spring-damper suspension keep the chassis grounded and absorb landings.
- verticalVelocity-=22*dt;
- car.position.y+=verticalVelocity*dt;
- if(car.position.y<0){const impact=Math.abs(verticalVelocity);car.position.y=0;verticalVelocity=Math.min(0,impact*.12);if(impact>1.2)bodyPitch=Math.min(bodyPitch+.025, .09)}
+ // Gravity acts only while airborne. Ground contact cancels downward velocity,
+ // preventing gravity from accumulating a fresh impact every frame.
+ if(car.position.y>0.001||verticalVelocity>0){
+  verticalVelocity-=22*dt;
+  car.position.y+=verticalVelocity*dt;
+  if(car.position.y<=0){car.position.y=0;verticalVelocity=0}
+ }else{
+  car.position.y=0;
+  verticalVelocity=0;
+ }
  const targetDrift=THREE.MathUtils.clamp(Math.abs(lateral)/Math.max(5,Math.abs(longitudinal))*.95,0,1);
  driftAmount=THREE.MathUtils.lerp(driftAmount,targetDrift,1-Math.exp(-5*dt));
- bodyRoll=THREE.MathUtils.lerp(bodyRoll,-steer*.055-driftAmount*steer*.12,1-Math.exp(5*dt));
+ bodyRoll=THREE.MathUtils.lerp(bodyRoll,-steer*.055-driftAmount*steer*.12,1-Math.exp(-5*dt));
  bodyPitch=THREE.MathUtils.lerp(bodyPitch,forward?-.025:back?.035:0,1-Math.exp(3*dt));
  car.rotation.set(bodyPitch,heading,bodyRoll);
  const camBack=10+driftAmount*1.7;
