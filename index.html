@@ -45,13 +45,16 @@ button{cursor:pointer;border:0;border-radius:10px;padding:12px 18px;font-weight:
 </div>
 <script type="module">
 import * as THREE from 'three';
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x87b9d8);scene.fog=new THREE.Fog(0x87b9d8,180,650);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x87b9d8);scene.fog=new THREE.Fog(0x87b9d8,180,900);
 const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,1200);
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.28;document.body.appendChild(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xd8efff,0x52634b,2.1));
 const sun=new THREE.DirectionalLight(0xfff0d6,2.7);sun.position.set(-90,150,70);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-180;sun.shadow.camera.right=180;sun.shadow.camera.top=180;sun.shadow.camera.bottom=-180;scene.add(sun);
 const mat=(color,roughness=.8,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(1100,1100),mat(0x777d79,1));ground.rotation.x=-Math.PI/2;ground.position.y=-.16;ground.receiveShadow=true;scene.add(ground);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(1500,1500),mat(0x777d79,1));ground.rotation.x=-Math.PI/2;ground.position.y=-.16;ground.receiveShadow=true;scene.add(ground);
+const solidBoxes=[],solidCircles=[];
+function addSolidBox(x,z,hx,hz,yaw=0){solidBoxes.push({x,z,hx,hz,yaw})}
+function addSolidCircle(x,z,r){solidCircles.push({x,z,r})}
 function box(w,h,d,m,x,y,z,parent=scene){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o}
 const asphaltCanvas=document.createElement('canvas');asphaltCanvas.width=asphaltCanvas.height=512;const ac=asphaltCanvas.getContext('2d');ac.fillStyle='#34383b';ac.fillRect(0,0,512,512);for(let i=0;i<26000;i++){const v=65+Math.random()*75;ac.fillStyle='rgba('+v+','+v+','+v+','+(Math.random()*.23)+')';ac.fillRect(Math.random()*512,Math.random()*512,1+Math.random()*2,1+Math.random()*2)}
 const asphaltTex=new THREE.CanvasTexture(asphaltCanvas);asphaltTex.wrapS=asphaltTex.wrapT=THREE.RepeatWrapping;asphaltTex.repeat.set(12,3);asphaltTex.colorSpace=THREE.SRGBColorSpace;
@@ -67,7 +70,7 @@ const concreteMats=facadeColors.map(c=>mat(c,.78,.12)),windowMats=[0x263f4b,0x38
 const warmWindow=new THREE.MeshStandardMaterial({color:0xffdca0,emissive:0xffb95e,emissiveIntensity:.28});
 const metalTrim=mat(0x59666d,.34,.78);
 function makeTower(x,z,w,d,h,seed){
- const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);const baseH=Math.min(8,h*.22),stone=concreteMats[seed%concreteMats.length],glass=glassMats[seed%glassMats.length];
+ const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);addSolidBox(x,z,w/2+1,d/2+1);const baseH=Math.min(8,h*.22),stone=concreteMats[seed%concreteMats.length],glass=glassMats[seed%glassMats.length];
  box(w,baseH,d,stone,0,baseH/2,0,g);box(w*.84,baseH*.55,.045,glass,0,baseH*.48,d/2+.03,g);box(w+1,.45,d+1,darkTrim,0,.24,0,g);
  box(w*.86,h-baseH,d*.86,glass,0,baseH+(h-baseH)/2,0,g);
  const cols=Math.max(2,Math.floor(w/3.2)),floors=Math.floor((h-baseH)/3.2);
@@ -81,11 +84,11 @@ for(let gx=-2;gx<=2;gx++)for(let gz=-2;gz<=2;gz++){if(gx===0||gz===0)continue;fo
 makeTower(-205,-205,42,38,112,towerSeed++);makeTower(205,-205,38,42,96,towerSeed++);makeTower(-205,205,40,36,124,towerSeed++);makeTower(205,205,44,40,105,towerSeed++);
 // Streetlights, signals, landscaped trees and skyline details.
 const poleMat=mat(0x303a40,.3,.78),glowMat=new THREE.MeshStandardMaterial({color:0xffe7bd,emissive:0xffc878,emissiveIntensity:1.4});
-for(let side of [-1,1])for(let z=-270;z<=270;z+=45){const x=side*17;box(.16,7.5,.16,poleMat,x,3.75,z);box(2.5,.13,.13,poleMat,x+side*1.1,7.25,z);box(.75,.1,.34,glowMat,x+side*2.1,7.12,z)}
-for(const [x,z] of [[-16,-16],[16,-16],[-16,16],[16,16]]){box(.16,5.2,.16,poleMat,x,2.6,z);box(.72,1.65,.38,darkTrim,x,4.8,z);for(let j=0;j<3;j++){const m=new THREE.MeshStandardMaterial({color:[0xe94d42,0xe9bd52,0x53b978][j],emissive:[0x5d100b,0x5b4208,0x0b4b24][j],emissiveIntensity:.55});const lamp=new THREE.Mesh(new THREE.SphereGeometry(.16,12,10),m);lamp.position.set(x,5.25-j*.45,z+.22);scene.add(lamp)}}
+for(let side of [-1,1])for(let z=-270;z<=270;z+=45){const x=side*17;box(.16,7.5,.16,poleMat,x,3.75,z);addSolidCircle(x,z,.48);box(2.5,.13,.13,poleMat,x+side*1.1,7.25,z);box(.75,.1,.34,glowMat,x+side*2.1,7.12,z)}
+for(const [x,z] of [[-16,-16],[16,-16],[-16,16],[16,16]]){box(.16,5.2,.16,poleMat,x,2.6,z);addSolidCircle(x,z,.55);box(.72,1.65,.38,darkTrim,x,4.8,z);for(let j=0;j<3;j++){const m=new THREE.MeshStandardMaterial({color:[0xe94d42,0xe9bd52,0x53b978][j],emissive:[0x5d100b,0x5b4208,0x0b4b24][j],emissiveIntensity:.55});const lamp=new THREE.Mesh(new THREE.SphereGeometry(.16,12,10),m);lamp.position.set(x,5.25-j*.45,z+.22);scene.add(lamp)}}
 const trunkM=mat(0x554436),leafMats=[0x42684e,0x527657,0x657f58].map(c=>mat(c,1));
-for(let i=0;i<110;i++){let x=(Math.random()-.5)*760,z=(Math.random()-.5)*760;if(Math.abs(x)<30||Math.abs(z)<30)continue;const h=3.5+Math.random()*3.5;box(.38,h*.55,.38,trunkM,x,h*.275,z);const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(h*.55,2),leafMats[i%3]);crown.position.set(x,h*.82,z);crown.castShadow=true;scene.add(crown)}
-for(let i=0;i<44;i++){const a=i/44*Math.PI*2,r=475+Math.random()*65,h=28+Math.random()*42;const hill=new THREE.Mesh(new THREE.ConeGeometry(65+Math.random()*35,h,9),mat(0x607b69));hill.position.set(Math.cos(a)*r,h/2-5,Math.sin(a)*r);hill.rotation.y=a*.3;scene.add(hill)}
+for(let i=0;i<110;i++){let x=(Math.random()-.5)*760,z=(Math.random()-.5)*760;if(Math.abs(x)<30||Math.abs(z)<30)continue;const h=3.5+Math.random()*3.5;box(.38,h*.55,.38,trunkM,x,h*.275,z);addSolidCircle(x,z,.72);const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(h*.55,2),leafMats[i%3]);crown.position.set(x,h*.82,z);crown.castShadow=true;scene.add(crown)}
+for(let i=0;i<44;i++){const a=i/44*Math.PI*2,r=650+Math.random()*70,h=28+Math.random()*42;const hill=new THREE.Mesh(new THREE.ConeGeometry(65+Math.random()*35,h,9),mat(0x607b69));hill.position.set(Math.cos(a)*r,h/2-5,Math.sin(a)*r);hill.rotation.y=a*.3;scene.add(hill)}
 // Moving city traffic: simple detailed vehicles following the four main avenues.
 const trafficRoot=new THREE.Group();scene.add(trafficRoot);
 const trafficPaint=[0xe7e9e8,0x172532,0x9c3030,0x3c6577,0xb4a27d,0x25292d].map(c=>new THREE.MeshPhysicalMaterial({color:c,roughness:.24,metalness:.62,clearcoat:.8}));
@@ -132,7 +135,7 @@ for(let i=0;i<raceSegments;i++){
  const normal=raceNormal((t+next)/2);
  for(const side of [-1,1]){
   const edge=p.clone().addScaledVector(normal,side*10.1);
-  const rail=box(.58,1.05,length*.88,(i%8<4?raceRed:raceWhite),edge.x,.55,edge.z,raceTrack);rail.rotation.y=yaw;
+  const rail=box(.58,1.05,length*.88,(i%8<4?raceRed:raceWhite),edge.x,.55,edge.z,raceTrack);rail.rotation.y=yaw;addSolidBox(edge.x,edge.z,.52,length*.44,yaw);
   const base=box(.8,.18,length*.9,raceDark,edge.x,.12,edge.z,raceTrack);base.rotation.y=yaw;
  }
 }
@@ -141,28 +144,33 @@ box(19,.035,1.7,raceWhite,startP.x,.105,startP.z,raceTrack);
 for(let i=0;i<12;i++){const tile=box(1.58,.045,.84,i%2?raceDark:raceWhite,startP.x-8.7+i*1.58,.14,startP.z,raceTrack)}
 // Start gantry and four checkpoint arches make the circuit easy to read at speed.
 const gantryMat=mat(0x26333b,.32,.7),signMat=new THREE.MeshStandardMaterial({color:0x0d2534,emissive:0x07131b});
-for(const x of [-9.8,9.8]){box(.5,7,.5,gantryMat,startP.x+x,3.5,startP.z,raceTrack);box(.7,.35,.7,raceRed,startP.x+x,6.8,startP.z,raceTrack)}
+for(const x of [-9.8,9.8]){box(.5,7,.5,gantryMat,startP.x+x,3.5,startP.z,raceTrack);addSolidCircle(startP.x+x,startP.z,.65);box(.7,.35,.7,raceRed,startP.x+x,6.8,startP.z,raceTrack)}
 box(21,.7,.65,gantryMat,startP.x,7,startP.z,raceTrack);box(12,1.1,.12,signMat,startP.x,7.05,startP.z+.36,raceTrack);
 for(let i=0;i<5;i++){const lamp=new THREE.Mesh(new THREE.BoxGeometry(1.05,.18,.18),new THREE.MeshStandardMaterial({color:0xfff1d0,emissive:0xffd58a,emissiveIntensity:1.4}));lamp.position.set(startP.x-4.2+i*2.1,7.05,startP.z+.46);raceTrack.add(lamp)}
 const checkpointMarkers=[];
 for(let i=0;i<4;i++){
  const t=-Math.PI/2+i*Math.PI/2,p=racePoint(t),n=raceNormal(t);
- for(const side of [-1,1]){const v=p.clone().addScaledVector(n,side*9.5);box(.34,4.6,.34,gantryMat,v.x,2.3,v.z,raceTrack)}
+ for(const side of [-1,1]){const v=p.clone().addScaledVector(n,side*9.5);box(.34,4.6,.34,gantryMat,v.x,2.3,v.z,raceTrack);addSolidCircle(v.x,v.z,.55)}
  const beam=box(19,.32,.32,gantryMat,p.x,4.55,p.z,raceTrack);beam.rotation.y=Math.atan2(-n.z,n.x);
  const marker=box(.8,3.2,.18,i%2?raceWhite:raceRed,p.x,6.25,p.z,raceTrack);marker.rotation.y=Math.atan2(-n.z,n.x);checkpointMarkers.push(marker);
 }
 // Paddock, pit garages and spectator stands beside the start straight.
 for(let i=0;i<6;i++){
  const x=raceCenter.x-38+i*13,z=-116;
- box(11,5,9,mat(i%2?0x78858b:0x9da7a9,.72,.12),x,2.5,z,raceTrack);
+ box(11,5,9,mat(i%2?0x78858b:0x9da7a9,.72,.12),x,2.5,z,raceTrack);addSolidBox(x,z,5.8,4.8);
  box(8,2.3,.16,glassMats[i%glassMats.length],x,2.2,z+4.56,raceTrack);
  box(11,.3,9,gantryMat,x,5.15,z,raceTrack);
 }
-for(let i=0;i<14;i++){const seat=box(3.2,.35,12,mat(i%2?0x52616b:0x6c7b83,.9),raceCenter.x+145,1+i*.62,-60+i*9,raceTrack);seat.rotation.y=.12}
+for(let i=0;i<14;i++){const seat=box(3.2,.35,12,mat(i%2?0x52616b:0x6c7b83,.9),raceCenter.x+145,1+i*.62,-60+i*9,raceTrack);seat.rotation.y=.12;addSolidBox(raceCenter.x+145,-60+i*9,2.2,6.2,.12)}
 let raceActive=false,raceFinished=false,raceElapsed=0,raceLaps=0,raceLastProgress=0;
 function raceProgress(){let a=Math.atan2((car.position.z-raceCenter.z)/raceRZ,(car.position.x-raceCenter.x)/raceRX)+Math.PI/2;return (a+Math.PI*2)%(Math.PI*2)}
 // Keep the player's car on the paved circuit while a race is active.
 // The invisible boundary sits just inside the visible safety barriers.
+function resolveWorldCollisions(){
+ const radius=1.45;
+ for(const c of solidCircles){let dx=car.position.x-c.x,dz=car.position.z-c.z,dist=Math.hypot(dx,dz),min=radius+c.r;if(dist<min){if(dist<1e-5){dx=1;dz=0;dist=1}const nx=dx/dist,nz=dz/dist,pen=min-dist;car.position.x+=nx*pen;car.position.z+=nz*pen;const vn=velocity.x*nx+velocity.z*nz;if(vn<0){velocity.x-=vn*nx*1.15;velocity.z-=vn*nz*1.15}}}
+ for(const c of solidBoxes){const dx=car.position.x-c.x,dz=car.position.z-c.z,co=Math.cos(c.yaw),si=Math.sin(c.yaw),lx=dx*co-dz*si,lz=dx*si+dz*co,qx=THREE.MathUtils.clamp(lx,-c.hx,c.hx),qz=THREE.MathUtils.clamp(lz,-c.hz,c.hz);let nx=lx-qx,nz=lz-qz,dist=Math.hypot(nx,nz);if(dist<radius){if(dist<1e-5){const px=c.hx-Math.abs(lx),pz=c.hz-Math.abs(lz);if(px<pz){nx=lx>=0?1:-1;nz=0;dist=px}else{nx=0;nz=lz>=0?1:-1;dist=pz}}const ux=nx/dist,uz=nz/dist,pen=radius-dist,wx=ux*co+uz*si,wz=-ux*si+uz*co;car.position.x+=wx*pen;car.position.z+=wz*pen;const vn=velocity.x*wx+velocity.z*wz;if(vn<0){velocity.x-=vn*wx*1.18;velocity.z-=vn*wz*1.18}}}
+}
 function constrainRaceTrack(){
  if(!raceActive)return;
  const dx=car.position.x-raceCenter.x,dz=car.position.z-raceCenter.z;
@@ -306,6 +314,7 @@ function update(dt){
  const maxSpeed=def.max*(driftRequested?1.04:1);
  if(velocity.length()>maxSpeed)velocity.setLength(maxSpeed);
  car.position.x+=velocity.x*dt;car.position.z+=velocity.z*dt;
+ resolveWorldCollisions();
  constrainRaceTrack();
  speed=velocity.dot(fwd);
  // This prototype has no jump ramps yet: keep the chassis grounded.
